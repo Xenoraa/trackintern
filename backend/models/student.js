@@ -16,10 +16,27 @@ const Student = sequelize.define("Student", {
     allowNull: false,
     unique: true,
   },
+  department: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'Computer Science',
+  },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
   },
+  verificationCodeUsed: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  assignedSupervisor: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+  },
+  createdAt: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  }
 });
 
 export default Student;

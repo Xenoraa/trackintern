@@ -1,4 +1,6 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import { authAPI } from '../services/api.js';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext({});
 
@@ -7,80 +9,106 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem('internTrackUser');
-    if (storedUser) {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+
+    if (token && storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem('internTrackUser');
+        const response = await authAPI.verifyToken();
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+      } catch (error) {
+        logout();
       }
     }
     setLoading(false);
-  }, []);
+  };
 
-  const login = async (email, password) => {
-    // Mock API call - Replace with actual API
-    const mockUsers = {
-      'student@baze.edu.ng': { 
-        id: '1', email, fullName: 'John Doe', role: 'student', 
-        department: 'Computer Science', lastLogin: new Date().toISOString() 
-      },
-      'supervisor@baze.edu.ng': { 
-        id: '2', email, fullName: 'Dr. Johnson', role: 'institutionSupervisor', 
-        department: 'Computer Science', lastLogin: new Date().toISOString() 
-      },
-      'coordinator@baze.edu.ng': { 
-        id: '3', email, fullName: 'Prof. Williams', role: 'siwesCoordinator', 
-        department: 'SIWES Office', lastLogin: new Date().toISOString() 
-      },
-      'hod@baze.edu.ng': { 
-        id: '4', email, fullName: 'Dr. Chen', role: 'hod', 
-        department: 'Computer Science', lastLogin: new Date().toISOString() 
-      },
-      'industry@company.com': { 
-        id: '5', email, fullName: 'Mr. Smith', role: 'industrySupervisor', 
-        company: 'Tech Corp', lastLogin: new Date().toISOString() 
+  const login = async (email, password, role = 'student') => {
+    try {
+      let response;
+
+      if (role === 'student') {
+        response = await authAPI.studentLogin({ email, password });
+      } else {
+        response = await authAPI.roleLogin({ email, password, role });
       }
-    };
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+      const { token, user } = response.data;
 
-    const userData = mockUsers[email] || null;
-    
-    if (userData && password === 'password') { // Default password for demo
-      setUser(userData);
-      localStorage.setItem('internTrackUser', JSON.stringify(userData));
-      return userData;
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      setUser(user);
+      setIsAuthenticated(true);
+
+      toast.success('Login successful!');
+      return { success: true, user };
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Login failed');
+      return { success: false, error: error.message };
     }
-    
-    throw new Error('Invalid email or password');
+  };
+
+  const studentSignup = async (data) => {
+    try {
+      const response = await authAPI.studentSignup(data);
+      const { token, user } = response.data;
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      setUser(user);
+      setIsAuthenticated(true);
+
+      toast.success('Registration successful!');
+      return { success: true, user };
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Registration failed');
+      return { success: false, error: error.message };
+    }
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
-    localStorage.removeItem('internTrackUser');
+    setIsAuthenticated(false);
+    toast.success('Logged out successfully');
+    window.location.href = '/login';
   };
 
-  const verifyCode = (code) => {
-    // Mock verification
-    return code.length >= 6;
+  const verifyEmail = async (email, code) => {
+    try {
+      await authAPI.verifyEmail({ email, code });
+      return { success: true };
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Verification failed');
+      return { success: false, error: error.message };
+    }
   };
 
   const value = {
     user,
+    loading,
+    isAuthenticated,
     login,
     logout,
-    verifyCode,
-    loading
+    studentSignup,
+    verifyEmail,
+    checkAuth,
   };
 
   return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
   );
 };

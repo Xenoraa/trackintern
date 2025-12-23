@@ -41,7 +41,7 @@ export default function Register() {
       return;
     }
     
-    // In real app, this would call API
+    // In real app, this would call Api
     if (formData.verificationCode.startsWith('SIWES')) {
       setStep(2);
       setError('');
@@ -61,7 +61,7 @@ export default function Register() {
       return;
     }
 
-    // API registration call would go here
+    // Api registration call would go here
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // Simulate successful registration

@@ -1,23 +1,23 @@
-// backend/index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-// import sequelize (default) and connect helper (named)
 import sequelize, { connectMYSQL } from "./config/db.js";
 
-// routes
+// Import existing routes
 import studentRoutes from "./routes/student.js";
 import authRoutes from "./routes/auth.js";
 import logbookRoutes from "./routes/logbook.js";
 import letterRoutes from "./routes/letter.js";
-import verificationRoutes from "./routes/VerificationCode.js"; // file name used earlier
+import verificationRoutes from "./routes/verificationCode.js";
 import institutionSupervisorRoutes from "./routes/institutionSupervisor.js";
 import industrySupervisorRoutes from "./routes/industrySupervisor.js";
 import hodRoutes from "./routes/hod.js";
 import siwesCoordinatorRoutes from "./routes/siwesCoordinator.js";
-// optional aggregated supervisors route if you implemented one:
-// import supervisorRoutes from "./routes/supervisor.js";
+
+// Import new routes
+import assignmentRoutes from "./routes/assignment.js";
+import gradingRoutes from "./routes/grading.js";
 
 dotenv.config();
 
@@ -32,39 +32,54 @@ app.use(express.urlencoded({ extended: true }));
 connectMYSQL();
 
 sequelize
-  .sync({ alter: true })
-  .then(() => console.log(" All tables synced successfully"))
-  .catch((err) => console.error("Sync error:", err.message));
+    .sync({ alter: true })
+    .then(() => console.log("✅ All tables synced successfully"))
+    .catch((err) => console.error("❌ Sync error:", err.message));
 
-// health
-app.get("/", (req, res) => res.send("InternTrack backend is running..."));
+// health check
+app.get("/", (req, res) => res.send("🚀 InternTrack backend is running..."));
+app.get("/health", (req, res) => res.json({
+  status: "healthy",
+  timestamp: new Date().toISOString()
+}));
 
-// register routes (consistent REST prefixes)
-app.use("/api/auth", authRoutes);                          // /api/auth/*
-app.use("/api/students", studentRoutes);                  // /api/students/*
-app.use("/api/logbook", logbookRoutes);                  // /api/logbook/*
-app.use("/api/letters", letterRoutes);                   // /api/letters/*
-app.use("/api/verification", verificationRoutes);        // /api/verification/*
+// Api routes
+app.use("/api/auth", authRoutes);
+app.use("/api/students", studentRoutes);
+app.use("/api/logbook", logbookRoutes);
+app.use("/api/letters", letterRoutes);
+app.use("/api/verification", verificationRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/grading", gradingRoutes);
 
-/* Supervisor-related routes */
-app.use("/api/institution-supervisors", institutionSupervisorRoutes); // /api/institution-supervisors/*
-app.use("/api/industry-supervisors", industrySupervisorRoutes);       // /api/industry-supervisors/*
-app.use("/api/hods", hodRoutes);                                     // /api/hods/*
-app.use("/api/siwes-coordinators", siwesCoordinatorRoutes);          // /api/siwes-coordinators/*
+// Role-based routes
+app.use("/api/institution-supervisors", institutionSupervisorRoutes);
+app.use("/api/industry-supervisors", industrySupervisorRoutes);
+app.use("/api/hods", hodRoutes);
+app.use("/api/siwes-coordinators", siwesCoordinatorRoutes);
 
 // 404 handler
-app.use((req, res, next) => {
-  res.status(404).json({ error: "Not Found", path: req.originalUrl });
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Not Found",
+    path: req.originalUrl,
+    message: "The requested endpoint does not exist"
+  });
 });
 
-// basic error handler
+// Error handler
 app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });
+  console.error("🔥 Unhandled error:", err);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal Server Error",
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
 
-// start server
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🌐 http://localhost:${PORT}`);
+  console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
 });

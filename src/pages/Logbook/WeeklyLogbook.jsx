@@ -18,7 +18,7 @@ export default function WeeklyLogbook() {
     e.preventDefault();
     setSaving(true);
     
-    // API call to save logbook
+    // Api call to save logbook
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     alert('Logbook entry saved successfully!');

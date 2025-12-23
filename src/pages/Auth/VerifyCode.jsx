@@ -14,7 +14,7 @@ export default function VerifyCode() {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
+    // Simulate Api call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     setMessage('Verification code has been sent to your email.');
@@ -26,7 +26,7 @@ export default function VerifyCode() {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call
+    // Simulate Api call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     alert('Email verified successfully!');
